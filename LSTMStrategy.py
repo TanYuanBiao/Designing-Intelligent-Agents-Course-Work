@@ -83,10 +83,3 @@ def load_lstm_model():
     GRU_model.load_weights('model_and_weight/LSTM_2000.weights.h5')
     return GRU_model
 
-if __name__ == '__main__':
-    GRU_model = load_lstm_model()
-
-
-    answerd = generate_lstm_answer("i need relief from chronic epididymitis",GRU_model)
-
-    print(answerd)

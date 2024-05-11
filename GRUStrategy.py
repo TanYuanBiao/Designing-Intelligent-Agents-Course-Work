@@ -83,10 +83,4 @@ def load_GRU_model():
     GRU_model.load_weights('model_and_weight/GRU_2000.weights.h5')
     return GRU_model
 
-if __name__ == '__main__':
-    GRU_model = load_GRU_model()
 
-
-    answerd = generate_gru_answer("i need relief from chronic epididymitis",GRU_model)
-
-    print(answerd)
