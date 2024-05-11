@@ -65,7 +65,7 @@ def generate_lstm_answer(question,model):
     predicted_indices = np.argmax(prediction, axis=-1)[0]
     predicted_words = ' '.join([tokenizer.index_word[i] for i in predicted_indices if i != 0])
     return predicted_words
-# 创建相同的模型结构
+
 
 
 def load_lstm_model():

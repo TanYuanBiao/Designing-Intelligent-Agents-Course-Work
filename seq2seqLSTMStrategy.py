@@ -34,22 +34,13 @@ class BahdanauAttention(tf.keras.layers.Layer):
         self.V = tf.keras.layers.Dense(1)
 
     def call(self, query, values):
-        # query hidden state shape == (batch_size, hidden size)
-        # query_with_time_axis shape == (batch_size, 1, hidden size)
-        # values shape == (batch_size, max_len, hidden size)
-        # we are doing this to broadcast addition along the time axis to calculate the score
         query_with_time_axis = tf.expand_dims(query, 1)
 
-        # score shape == (batch_size, max_length, 1)
-        # we get 1 at the last axis because we are applying score to self.V
-        # the shape of the tensor before applying self.V is (batch_size, max_length, units)
         score = self.V(tf.nn.tanh(
             self.W1(query_with_time_axis) + self.W2(values)))
 
-        # attention_weights shape == (batch_size, max_length, 1)
         attention_weights = tf.nn.softmax(score, axis=1)
 
-        # context_vector shape after sum == (batch_size, hidden_size)
         context_vector = attention_weights * values
         context_vector = tf.reduce_sum(context_vector, axis=1)
 
@@ -76,19 +67,14 @@ class Decoder(tf.keras.Model):
         # enc_output shape == (batch_size, max_length, hidden_size)
         context_vector, attention_weights = self.attention(hidden[0], enc_output)  # Use only the hidden state for attention
 
-        # x shape after passing through embedding == (batch_size, 1, embedding_dim)
         x = self.embedding(x)
 
-        # x shape after concatenation == (batch_size, 1, embedding_dim + hidden_size)
         x = tf.concat([tf.expand_dims(context_vector, 1), x], axis=-1)
 
-        # passing the concatenated vector to the LSTM
         output, state_h, state_c = self.lstm(x, initial_state=hidden)
 
-        # output shape == (batch_size * 1, hidden_size)
         output = tf.reshape(output, (-1, output.shape[2]))
 
-        # output shape == (batch_size, vocab)
         x = self.fc(output)
 
         return x, (state_h, state_c), attention_weights
@@ -117,16 +103,14 @@ def load_lstm_seq2seq_model_and_weights(encoder_config_path, decoder_config_path
     # 输出模型类型
     print("Type of encoder:", type(encoder))
     print("Type of decoder:", type(decoder))
-    # 创建假输入数据来初始化模型
-    encoder_dummy_input = tf.random.uniform((64, 13), dtype=tf.float32)  # 输入长度为13，批量大小为64
+
+    encoder_dummy_input = tf.random.uniform((64, 13), dtype=tf.float32)
     encoder_hidden_initial = encoder.initialize_hidden_state()
-    encoder_output, encoder_hidden = encoder(encoder_dummy_input, encoder_hidden_initial)  # 初始化并构建模型
+    encoder_output, encoder_hidden = encoder(encoder_dummy_input, encoder_hidden_initial)
 
-    # 为decoder创建正确的假输入
-    decoder_dummy_input = tf.random.uniform((64, 1), dtype=tf.float32)  # 每次解码只处理一个时间步长的输入
-    decoder_output, decoder_hidden, _ = decoder(decoder_dummy_input, encoder_hidden, encoder_output)  # 构建模型
+    decoder_dummy_input = tf.random.uniform((64, 1), dtype=tf.float32)
+    decoder_output, decoder_hidden, _ = decoder(decoder_dummy_input, encoder_hidden, encoder_output)
 
-    # 加载权重
     encoder.load_weights(encoder_weights_path)
     decoder.load_weights(decoder_weights_path)
 

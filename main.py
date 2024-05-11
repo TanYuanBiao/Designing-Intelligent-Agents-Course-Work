@@ -16,10 +16,6 @@ from LSTMStrategy import load_lstm_model, generate_lstm_answer
 from seq2seqGRUStrategy import clean_text, tokenize, load_model_and_weights, gru_evaluate
 from seq2seqLSTMStrategy import load_lstm_seq2seq_model_and_weights, lstm_evaluate
 
-# Import your model-related functions
-# Assuming the below functions are defined elsewhere in your project:
-# from seq2seqStrategy import load_model_and_weights, evaluate, clean_text, tokenize
-
 # Prepare data and models
 data = pd.read_csv("model_and_weight/chat_health.csv")
 data["short_question"] = data["short_question"].apply(clean_text)
@@ -38,16 +34,17 @@ lstm_encoder, lstm_decoder = load_lstm_seq2seq_model_and_weights("model_and_weig
 GRU_model = load_GRU_model()
 LSTM_model = load_lstm_model()
 cosine_similarity_word_model = Word2Vec.load("model_and_weight/word2vec_model_2000_pairs.model")
+
 def ask_cosine_similarity(sentence):
     answer = generate_answer(sentence, cosine_similarity_word_model)
     return answer
 
 def ask_gru(sentence):
-    answer = generate_gru_answer(sentence,GRU_model)
+    answer = generate_gru_answer(sentence, GRU_model)
     return answer
 
 def ask_lstm(sentence):
-    answer = generate_lstm_answer(sentence,GRU_model)
+    answer = generate_lstm_answer(sentence, lstm_encoder)
     return answer
 
 def ask_seq2seq_gru(sentence):
@@ -64,28 +61,27 @@ class StrategySelectorScreen(Screen):
         layout = BoxLayout(orientation='vertical')
         strategies = {
             'Cosine Similarity': ask_cosine_similarity,
-            'GRU': ask_gru,
-            'LSTM': ask_lstm,
+            'Bidirectional GRU': ask_gru,
+            'Bidirectional LSTM': ask_lstm,
             'Seq2Seq (GRU)': ask_seq2seq_gru,
             'Seq2Seq (LSTM)': ask_seq2seq_lstm
         }
         for strategy, function in strategies.items():
             btn = Button(text=strategy)
-            btn.bind(on_press=lambda instance, func=function: self.select_strategy(func))
+            btn.bind(on_press=lambda instance, func=function, name=strategy: self.select_strategy(func, name))
             layout.add_widget(btn)
         self.add_widget(layout)
 
-    def select_strategy(self, strategy_func, *args):
+    def select_strategy(self, strategy_func, strategy_name, *args):
         chat_interface = self.manager.get_screen('chat_interface')
         chat_interface.selected_strategy = strategy_func
+        chat_interface.selected_strategy_name = strategy_name
         self.manager.current = 'chat_interface'
 
 class ChatBotInterface(Screen):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         layout = BoxLayout(orientation='vertical')
-
-        # Create a ScrollView for the messages
         self.scroll_view = ScrollView(size_hint=(1, 0.8), do_scroll_x=False)
         self.label = Label(size_hint_y=None, text='Welcome to Chatbot!', font_name='Roboto', valign='top', halign='left',
                            markup=True, color=(0, 0, 0, 1))
@@ -93,7 +89,6 @@ class ChatBotInterface(Screen):
         self.label.texture_update()
         self.label.height = max(self.label.texture_size[1], 1)
         self.scroll_view.add_widget(self.label)
-
         with self.scroll_view.canvas.before:
             Color(1, 1, 1, 1)
             self.rect = Rectangle(size=self.scroll_view.size, pos=self.scroll_view.pos)
@@ -101,46 +96,47 @@ class ChatBotInterface(Screen):
             self.line = Line(rectangle=(self.scroll_view.x, self.scroll_view.y,
                                         self.scroll_view.width, self.scroll_view.height), width=1.2)
         self.scroll_view.bind(size=self.update_graphics, pos=self.update_graphics)
-
-        # Create the input layout with a TextInput, Send Button, and Return Button
         self.input_layout = BoxLayout(size_hint=(1, 0.2))
-        self.text_input = TextInput(size_hint=(0.6, 1), font_name='Roboto')  # Reduced width to accommodate buttons
+        self.text_input = TextInput(size_hint=(0.6, 1), font_name='Roboto')
         self.send_button = Button(text='Send', size_hint=(0.2, 1), font_name='Roboto')
-        self.return_button = Button(text='Return', size_hint=(0.2, 1), background_color=(1, 0, 0, 1))  # Red button
+        self.return_button = Button(text='Return', size_hint=(0.2, 1), background_color=(1, 0, 0, 1))
         self.send_button.bind(on_press=self.send_message)
         self.return_button.bind(on_press=self.return_to_selector)
-
         self.input_layout.add_widget(self.text_input)
         self.input_layout.add_widget(self.send_button)
         self.input_layout.add_widget(self.return_button)
-
         layout.add_widget(self.scroll_view)
         layout.add_widget(self.input_layout)
         self.add_widget(layout)
+
+    def clean_response(self, response):
+        # Remove the <eos> token from the response
+        return response.replace('<eos>', '')
+
+    def send_message(self, instance):
+        user_message = self.text_input.text.strip()
+        if user_message:
+            response = self.selected_strategy(user_message) if self.selected_strategy else "No strategy selected."
+            cleaned_response = self.clean_response(response)  # Clean the response
+            strategy_info = f" ({self.selected_strategy_name})" if hasattr(self, 'selected_strategy_name') else ""
+            self.label.text += f"\n[color=ff3333]User: {user_message}[/color]"
+            self.label.text += f"\n[color=3333ff]Chatbot{strategy_info}: {cleaned_response}[/color]"
+            self.text_input.text = ''
+            self.label.texture_update()
+            self.label.height = self.label.texture_size[1]
+            if self.label.height > self.scroll_view.height:
+                Clock.schedule_once(self.scroll_to_bottom)
 
     def update_graphics(self, instance, value):
         self.rect.pos = instance.pos
         self.rect.size = instance.size
         self.line.rectangle = (instance.x + 1, instance.y + 1, instance.width - 2, instance.height - 2)
 
-    def send_message(self, instance):
-        user_message = self.text_input.text.strip()
-        if user_message:
-            response = self.selected_strategy(user_message) if self.selected_strategy else "No strategy selected."
-            self.label.text += f"\n[color=ff3333]User: {user_message}[/color]"
-            self.label.text += f"\n[color=3333ff]Chatbot: {response}[/color]"
-            self.text_input.text = ''  # Clear the input
-            self.label.texture_update()
-            self.label.height = self.label.texture_size[1]
-            if self.label.height > self.scroll_view.height:
-                Clock.schedule_once(self.scroll_to_bottom)
-
     def scroll_to_bottom(self, *args):
         self.scroll_view.scroll_y = 0
 
     def return_to_selector(self, instance):
         self.manager.current = 'strategy_selector'
-
 
 class ChatBotApp(App):
     def build(self):

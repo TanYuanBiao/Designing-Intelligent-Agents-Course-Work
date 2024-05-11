@@ -1,24 +1,13 @@
-import keras
-import tensorflow
+
 from keras import Sequential
 from keras.src.layers import Embedding, GRU, Dense, Dropout, Bidirectional, BatchNormalization
-from tensorflow.python.keras.models import model_from_json
-from tensorflow.keras.initializers import Orthogonal
 import pickle
 import numpy as np
-from keras.src.saving import load_model
 from tensorflow.keras.preprocessing.sequence import pad_sequences
 import re
-import unicodedata
-import pandas as pd
-import string
-# load model
-import tensorflow as tf
-import re
 import string
 import unicodedata
-from tensorflow.python.keras.initializers.initializers_v2 import Orthogonal
-from tensorflow.python.keras.models import model_from_json
+
 
 
 # Define function to convert unicode to ASCII
@@ -65,7 +54,7 @@ def generate_gru_answer(question,model):
     predicted_indices = np.argmax(prediction, axis=-1)[0]
     predicted_words = ' '.join([tokenizer.index_word[i] for i in predicted_indices if i != 0])
     return predicted_words
-# 创建相同的模型结构
+
 
 
 def load_GRU_model():
