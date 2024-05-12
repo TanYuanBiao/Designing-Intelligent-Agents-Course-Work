@@ -44,7 +44,7 @@ def ask_gru(sentence):
     return answer
 
 def ask_lstm(sentence):
-    answer = generate_lstm_answer(sentence, lstm_encoder)
+    answer = generate_lstm_answer(sentence, LSTM_model)
     return answer
 
 def ask_seq2seq_gru(sentence):
@@ -52,7 +52,7 @@ def ask_seq2seq_gru(sentence):
     return result
 
 def ask_seq2seq_lstm(sentence):
-    result, sentence = lstm_evaluate(sentence, lstm_encoder, lstm_decoder, input_tensor, inp_lang, target_tensor, targ_lang)
+    result, sentence = lstm_evaluate(sentence, gru_encoder, gru_decoder, input_tensor, inp_lang, target_tensor, targ_lang)
     return result
 
 class StrategySelectorScreen(Screen):
@@ -83,7 +83,7 @@ class ChatBotInterface(Screen):
         super().__init__(**kwargs)
         layout = BoxLayout(orientation='vertical')
         self.scroll_view = ScrollView(size_hint=(1, 0.8), do_scroll_x=False)
-        self.label = Label(size_hint_y=None, text='Welcome to Chatbot!', font_name='Roboto', valign='top', halign='left',
+        self.label = Label(size_hint_y=None, text='Welcome to health Chatbot!', font_name='Roboto', valign='top', halign='left',
                            markup=True, color=(0, 0, 0, 1))
         self.label.bind(width=lambda *x: self.label.setter('text_size')(self.label, (self.label.width, None)))
         self.label.texture_update()
