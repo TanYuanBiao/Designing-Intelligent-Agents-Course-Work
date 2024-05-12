@@ -52,7 +52,7 @@ def ask_seq2seq_gru(sentence):
     return result
 
 def ask_seq2seq_lstm(sentence):
-    result, sentence = lstm_evaluate(sentence, gru_encoder, gru_decoder, input_tensor, inp_lang, target_tensor, targ_lang)
+    result, sentence = lstm_evaluate(sentence, lstm_encoder, lstm_decoder, input_tensor, inp_lang, target_tensor, targ_lang)
     return result
 
 class StrategySelectorScreen(Screen):

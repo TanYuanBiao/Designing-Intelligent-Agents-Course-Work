@@ -1,0 +1,12 @@
+(1)main.py file-based chatbot launcher
+(2)
+CosineSimilarityStrategy.py
+GRUStrategy.py
+seq2seqGRUStrategy.py
+seq2seqLSTMStrategy.py
+LSTMStrategy.py
+
+These files are different strategy of chatbot
+
+(3)model_and_weight folder contain models and weight
+(4) train_model_result_file stores the process of training the model and the experimental results, including the average response time and BLUE value.
